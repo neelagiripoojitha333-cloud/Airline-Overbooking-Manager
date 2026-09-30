@@ -1,0 +1,6 @@
+target/
+.vscode/
+*.class
+.env
+__pycache__/
+*.pyc

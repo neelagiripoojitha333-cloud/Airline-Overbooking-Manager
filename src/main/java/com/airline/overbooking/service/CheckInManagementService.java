@@ -1,0 +1,271 @@
+package com.airline.overbooking.service;
+
+import com.airline.overbooking.model.BookingStatus;
+import com.airline.overbooking.model.CheckInStatus;
+import com.airline.overbooking.model.FareClass;
+import com.airline.overbooking.model.Flight;
+import com.airline.overbooking.model.ResolutionStatus;
+import com.airline.overbooking.repository.SqliteBookingRepository;
+import com.airline.overbooking.repository.SqliteBookingRepository.BookingRecord;
+import com.airline.overbooking.repository.SqliteFlightRepository;
+import com.airline.overbooking.service.CabinLayoutService.Seat;
+
+import java.sql.SQLException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+public class CheckInManagementService {
+    private final SqliteBookingRepository bookings;
+    private final SqliteFlightRepository flights;
+    private final CabinLayoutService cabinLayout;
+
+    public CheckInManagementService(SqliteBookingRepository bookings, SqliteFlightRepository flights,
+                                   CabinLayoutService cabinLayout) {
+        this.bookings = Objects.requireNonNull(bookings, "bookings must not be null");
+        this.flights = Objects.requireNonNull(flights, "flights must not be null");
+        this.cabinLayout = Objects.requireNonNull(cabinLayout, "cabinLayout must not be null");
+    }
+
+    public CapacitySummary checkIn(String bookingId, Instant checkedInAt) throws SQLException {
+        BookingRecord booking = bookings.findByBookingId(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found: " + bookingId));
+        if (booking.passenger().getBookingStatus() != BookingStatus.CONFIRMED) {
+            throw new IllegalArgumentException("Only confirmed bookings can check in");
+        }
+        bookings.checkIn(bookingId, checkedInAt);
+        return reconcileFlight(booking.flightNumber());
+    }
+
+    public CapacitySummary reconcileFlight(String flightNumber) throws SQLException {
+        Flight flight = flights.findByFlightNumber(flightNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Flight not found: " + flightNumber));
+        List<BookingRecord> records = bookings.findByFlightNumber(flightNumber);
+        int capacity = flight.getCapacity();
+        List<BookingRecord> activeCheckIns = records.stream()
+                .filter(CheckInManagementService::isConfirmed)
+                .filter(record -> record.checkInStatus() == CheckInStatus.CHECKED_IN)
+                .filter(record -> record.resolutionStatus() != ResolutionStatus.RESOLVED)
+                .sorted(priorityOrder())
+                .toList();
+
+        if (activeCheckIns.size() > capacity) {
+            allocateAtCapacity(flightNumber, capacity, activeCheckIns);
+        } else {
+            allocateAvailableSeats(flightNumber, capacity, records, activeCheckIns);
+        }
+        return summarize(flight, bookings.findByFlightNumber(flightNumber));
+    }
+
+    public CapacitySummary getSummary(String flightNumber) throws SQLException {
+        Flight flight = flights.findByFlightNumber(flightNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Flight not found: " + flightNumber));
+        return summarize(flight, bookings.findByFlightNumber(flightNumber));
+    }
+
+    public CapacitySummary keepPassengerOnCurrentFlight(String bookingId) throws SQLException {
+        BookingRecord booking = requireOverCapacityBooking(bookingId);
+        if (!bookings.markKeepOnCurrentFlight(bookingId, true)) {
+            throw new IllegalStateException("Could not prioritize the selected passenger");
+        }
+        return reconcileFlight(booking.flightNumber());
+    }
+
+    public CapacitySummary markResolved(String bookingId) throws SQLException {
+        BookingRecord booking = requireOverCapacityBooking(bookingId);
+        if (!bookings.markOverCapacityResolved(bookingId)) {
+            throw new IllegalStateException("Could not resolve the selected over-capacity case");
+        }
+        return reconcileFlight(booking.flightNumber());
+    }
+
+    public CapacitySummary reaccommodate(String bookingId, String nextFlightNumber) throws SQLException {
+        BookingRecord booking = requireOverCapacityBooking(bookingId);
+        Flight currentFlight = flights.findByFlightNumber(booking.flightNumber()).orElseThrow();
+        Flight nextFlight = flights.findByFlightNumber(nextFlightNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Alternative flight not found"));
+        if (currentFlight.getFlightNumber().equals(nextFlight.getFlightNumber())
+                || !currentFlight.getDestination().equals(nextFlight.getDestination())) {
+            throw new IllegalArgumentException("Choose a different flight serving the same destination");
+        }
+        if (bookings.findByFlightNumber(nextFlightNumber).stream()
+                .filter(CheckInManagementService::isConfirmed)
+                .filter(record -> record.seatNumber() != null)
+                .count() >= nextFlight.getCapacity()) {
+            throw new IllegalArgumentException("The alternative flight has no physical seats available");
+        }
+        if (!bookings.reaccommodate(bookingId, nextFlightNumber)) {
+            throw new IllegalStateException("Could not reaccommodate the selected passenger");
+        }
+        reconcileFlight(booking.flightNumber());
+        return getSummary(nextFlightNumber);
+    }
+
+    public CapacitySummary undoResolution(String bookingId) throws SQLException {
+        BookingRecord booking = bookings.findByBookingId(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found: " + bookingId));
+        String currentFlightNumber = booking.flightNumber();
+        String previousFlightNumber = booking.previousFlightNumber();
+        if (!bookings.undoResolution(bookingId)) {
+            throw new IllegalArgumentException("Booking has no resolution to undo");
+        }
+        BookingRecord restored = bookings.findByBookingId(bookingId).orElseThrow();
+        reconcileFlight(restored.flightNumber());
+        if (previousFlightNumber != null && !previousFlightNumber.equals(restored.flightNumber())) {
+            return getSummary(currentFlightNumber);
+        }
+        return getSummary(restored.flightNumber());
+    }
+
+    private void allocateAtCapacity(String flightNumber, int capacity, List<BookingRecord> priorityOrdered)
+            throws SQLException {
+        List<Seat> physicalSeats = cabinLayout.createSeats(capacity);
+        Map<String, Seat> seatsByNumber = new HashMap<>();
+        Set<String> availableSeats = new HashSet<>();
+        for (Seat seat : physicalSeats) {
+            seatsByNumber.put(seat.seatNumber(), seat);
+            availableSeats.add(seat.seatNumber());
+        }
+
+       int seatedCount = Math.min(capacity, priorityOrdered.size());
+       Map<String, String> assignments = new LinkedHashMap<>();
+       List<BookingRecord> needsSeat = new ArrayList<>();
+       for (int index = 0; index < seatedCount; index++) {
+           BookingRecord booking = priorityOrdered.get(index);
+           Seat existingSeat = seatsByNumber.get(booking.seatNumber());
+           if (existingSeat != null && availableSeats.remove(existingSeat.seatNumber())) {
+               assignments.put(booking.bookingId(), existingSeat.seatNumber());
+           } else {
+               needsSeat.add(booking);
+           }
+       }
+
+       for (BookingRecord booking : needsSeat) {
+           String seatNumber = chooseSeat(availableSeats, seatsByNumber, booking.passenger().getFareClass());
+           if (seatNumber == null) {
+               throw new IllegalStateException("Physical seat layout is smaller than the flight capacity");
+           }
+           availableSeats.remove(seatNumber);
+           assignments.put(booking.bookingId(), seatNumber);
+       }
+
+       Set<String> excess = new HashSet<>();
+       for (int index = seatedCount; index < priorityOrdered.size(); index++) {
+           excess.add(priorityOrdered.get(index).bookingId());
+       }
+       bookings.applyPhysicalSeatAssignments(flightNumber, assignments, excess);
+   }
+
+   private void allocateAvailableSeats(String flightNumber, int capacity, List<BookingRecord> records,
+                                       List<BookingRecord> activeCheckIns) throws SQLException {
+       Set<String> availableSeats = new HashSet<>();
+       for (Seat seat : cabinLayout.createSeats(capacity)) {
+           availableSeats.add(seat.seatNumber());
+       }
+       for (BookingRecord record : records) {
+           if (isConfirmed(record) && record.seatNumber() != null) {
+               availableSeats.remove(record.seatNumber());
+           }
+       }
+
+       for (BookingRecord booking : activeCheckIns) {
+           if (booking.seatNumber() != null) {
+               if (booking.resolutionStatus() == ResolutionStatus.OVER_CAPACITY) {
+                   bookings.markOverCapacityResolved(booking.bookingId());
+               }
+               continue;
+           }
+           String seatNumber = chooseSeat(availableSeats,
+                   seatsByNumber(cabinLayout.createSeats(capacity)), booking.passenger().getFareClass());
+           if (seatNumber != null && bookings.assignSeatToBooking(
+                   booking.bookingId(), flightNumber, seatNumber)) {
+               availableSeats.remove(seatNumber);
+           }
+       }
+   }
+
+   private static Map<String, Seat> seatsByNumber(List<Seat> seats) {
+       Map<String, Seat> seatsByNumber = new HashMap<>();
+       for (Seat seat : seats) {
+           seatsByNumber.put(seat.seatNumber(), seat);
+       }
+       return seatsByNumber;
+   }
+
+   private static String chooseSeat(Set<String> availableSeats, Map<String, Seat> seatsByNumber,
+                                    FareClass fareClass) {
+       return availableSeats.stream()
+               .filter(seat -> seatsByNumber.get(seat).fareClass() == fareClass)
+               .sorted()
+               .findFirst()
+               .orElseGet(() -> availableSeats.stream().sorted().findFirst().orElse(null));
+   }
+
+   private static Comparator<BookingRecord> priorityOrder() {
+       return Comparator.comparing(BookingRecord::keepOnCurrent).reversed()
+               .thenComparingInt(record -> farePriority(record.passenger().getFareClass()))
+               .thenComparing(record -> record.checkedInAt() == null ? Instant.MAX : record.checkedInAt())
+               .thenComparing(BookingRecord::bookingId);
+   }
+
+   private static int farePriority(FareClass fareClass) {
+       return switch (fareClass) {
+           case FIRST -> 0;
+           case BUSINESS -> 1;
+           case PREMIUM_ECONOMY -> 2;
+           case ECONOMY -> 3;
+       };
+   }
+
+   private BookingRecord requireOverCapacityBooking(String bookingId) throws SQLException {
+       BookingRecord booking = bookings.findByBookingId(bookingId)
+               .orElseThrow(() -> new IllegalArgumentException("Booking not found: " + bookingId));
+       if (booking.resolutionStatus() != ResolutionStatus.OVER_CAPACITY) {
+           throw new IllegalArgumentException("Booking is not awaiting over-capacity resolution");
+       }
+       return booking;
+   }
+
+   private CapacitySummary summarize(Flight flight, List<BookingRecord> records) {
+       int confirmedBookings = (int) records.stream().filter(CheckInManagementService::isConfirmed).count();
+       int checkedInPassengers = (int) records.stream()
+               .filter(CheckInManagementService::isConfirmed)
+               .filter(record -> record.checkInStatus() == CheckInStatus.CHECKED_IN)
+               .count();
+       int boardableCheckedIn = (int) records.stream()
+               .filter(CheckInManagementService::isConfirmed)
+               .filter(record -> record.checkInStatus() == CheckInStatus.CHECKED_IN)
+               .filter(record -> record.resolutionStatus() != ResolutionStatus.RESOLVED)
+               .count();
+       int excessPassengers = Math.max(0, boardableCheckedIn - flight.getCapacity());
+       int availableSeats = Math.max(0, flight.getCapacity() - boardableCheckedIn);
+       List<BookingRecord> excess = records.stream()
+               .filter(record -> record.resolutionStatus() == ResolutionStatus.OVER_CAPACITY)
+               .sorted(priorityOrder())
+               .toList();
+       return new CapacitySummary(flight.getFlightNumber(), flight.getCapacity(), confirmedBookings,
+               checkedInPassengers, availableSeats, excessPassengers,
+               records.stream().filter(record -> record.seatNumber() != null
+                       && isConfirmed(record)).count(), excess, excessPassengers > 0);
+   }
+
+   private static boolean isConfirmed(BookingRecord record) {
+       return record.passenger().getBookingStatus() == BookingStatus.CONFIRMED;
+   }
+
+   public record CapacitySummary(String flightNumber, int capacity, int confirmedBookings,
+                                 int checkedInPassengers, int availableSeats, int excessPassengers,
+                                 long assignedPhysicalSeats, List<BookingRecord> excessBookings,
+                                 boolean overCapacityAlert) {
+       public CapacitySummary {
+           excessBookings = List.copyOf(excessBookings);
+       }
+   }
+}

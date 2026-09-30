@@ -1,0 +1,486 @@
+.root {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+    -fx-background-color: #f2f4f1;
+    -fx-text-fill: #18323a;
+}
+
+.app-root {
+    -fx-background-color: #f2f4f1;
+}
+
+.app-header {
+    -fx-background-color: #16343b;
+}
+
+.brand-label {
+    -fx-text-fill: #f8f8f1;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.header-tag {
+    -fx-text-fill: #a9c8bf;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.sidebar {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d9e0db;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+.sidebar > .label {
+    -fx-text-fill: #657a78;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.flight-list {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.flight-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 5px 4px;
+}
+
+.flight-list .list-cell:selected {
+    -fx-background-color: transparent;
+}
+
+.flight-cell {
+    -fx-background-color: transparent;
+}
+
+.flight-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dce3df;
+    -fx-border-radius: 7px;
+    -fx-background-radius: 7px;
+    -fx-padding: 12px;
+}
+
+.flight-list .list-cell:selected .flight-card {
+    -fx-background-color: #f1f8f5;
+    -fx-border-color: #177f72;
+    -fx-border-width: 2px;
+}
+
+.flight-card-number {
+    -fx-text-fill: #687b78;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.flight-card-route {
+    -fx-text-fill: #16343b;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.flight-card-airports {
+    -fx-text-fill: #657a78;
+    -fx-font-size: 10px;
+}
+
+.flight-time-block,
+.flight-duration-block {
+    -fx-background-color: #f4f6f3;
+    -fx-background-radius: 4px;
+    -fx-padding: 7px;
+    -fx-text-fill: #24434a;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.flight-duration-block {
+    -fx-text-fill: #177f72;
+}
+
+.fare-cell {
+    -fx-background-radius: 4px;
+    -fx-padding: 6px 8px;
+    -fx-min-width: 155px;
+}
+
+.fare-name {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+}
+
+.fare-price {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.fare-economy {
+    -fx-background-color: #e3f2e5;
+    -fx-text-fill: #286a37;
+}
+
+.fare-premium {
+    -fx-background-color: #e3eff9;
+    -fx-text-fill: #285f90;
+}
+
+.fare-business {
+    -fx-background-color: #eee9f8;
+    -fx-text-fill: #62499a;
+}
+
+.fare-first {
+    -fx-background-color: #fbf1d8;
+    -fx-text-fill: #8b6511;
+}
+
+.button-secondary {
+    -fx-background-color: #e8eeeb;
+    -fx-text-fill: #24434a;
+    -fx-font-weight: bold;
+}
+
+.flight-cell-number {
+    -fx-text-fill: #16343b;
+    -fx-font-weight: bold;
+}
+
+.flight-cell-route {
+    -fx-text-fill: #687d7c;
+    -fx-font-size: 11px;
+}
+
+.main-content {
+    -fx-padding: 4px 2px;
+}
+
+.page-title {
+    -fx-text-fill: #16343b;
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+}
+
+.page-subtitle {
+    -fx-text-fill: #607473;
+    -fx-font-size: 14px;
+}
+
+.stat-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d9e0db;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 15px 17px;
+}
+
+.stat-heading {
+    -fx-text-fill: #657a78;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.stat-value {
+    -fx-text-fill: #177f72;
+    -fx-font-size: 23px;
+    -fx-font-weight: bold;
+}
+
+.quiet-note {
+    -fx-text-fill: #647774;
+    -fx-font-size: 11px;
+}
+
+.recommendation-panel {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d9e0db;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 14px 16px;
+}
+
+.recommendation-value {
+    -fx-text-fill: #16343b;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+}
+
+.recommendation-details {
+    -fx-text-fill: #607473;
+    -fx-font-size: 11px;
+}
+
+.seat-map-panel,
+.booking-panel {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d9e0db;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 15px;
+}
+
+.seat-map-scroll,
+.seat-map-scroll .viewport {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent;
+}
+
+.seat-column-header,
+.seat-row-number {
+    -fx-text-fill: #72827f;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+
+.seat-button {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5px 5px 9px 9px;
+    -fx-border-radius: 5px 5px 9px 9px;
+    -fx-border-width: 1px;
+    -fx-padding: 3px;
+    -fx-cursor: hand;
+}
+
+.seat-button.seat-first,
+.seat-legend-swatch.seat-first {
+    -fx-background-color: #e8bd59;
+    -fx-border-color: #c89b34;
+    -fx-text-fill: #382b0d;
+}
+
+.seat-button.seat-business,
+.seat-legend-swatch.seat-business {
+    -fx-background-color: #a899d5;
+    -fx-border-color: #8673bf;
+    -fx-text-fill: #302353;
+}
+
+.seat-button.seat-premium,
+.seat-legend-swatch.seat-premium {
+    -fx-background-color: #8bbce0;
+    -fx-border-color: #5d98c8;
+    -fx-text-fill: #14364f;
+}
+
+.seat-button.seat-economy,
+.seat-legend-swatch.seat-economy {
+    -fx-background-color: #91c69b;
+    -fx-border-color: #68a876;
+    -fx-text-fill: #173d22;
+}
+
+.seat-button.seat-occupied,
+.seat-legend-swatch.seat-occupied {
+    -fx-background-color: #d8dfdc;
+    -fx-border-color: #b7c1bd;
+    -fx-text-fill: #73817d;
+}
+
+.seat-button.seat-selected {
+    -fx-border-color: #17353b;
+    -fx-border-width: 3px;
+    -fx-effect: dropshadow(gaussian, rgba(22, 52, 59, 0.24), 5, 0.1, 0, 1);
+}
+
+.seat-button:disabled {
+    -fx-opacity: 0.78;
+    -fx-cursor: default;
+}
+
+.seat-legend-swatch {
+    -fx-pref-width: 12px;
+    -fx-pref-height: 12px;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-border-width: 1px;
+}
+
+.seat-legend-label {
+    -fx-text-fill: #647774;
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+}
+
+.seat-selection-info {
+    -fx-text-fill: #176e64;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.section-title {
+    -fx-text-fill: #16343b;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.booking-table {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d9e0db;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+.booking-table .column-header-background {
+    -fx-background-color: #e7ece8;
+    -fx-background-radius: 6px 6px 0 0;
+}
+
+.booking-table .column-header,
+.booking-table .filler {
+    -fx-background-color: transparent;
+    -fx-size: 38px;
+}
+
+.booking-table .column-header .label {
+    -fx-text-fill: #526866;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.booking-table .table-row-cell {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #edf0ed transparent;
+}
+
+.booking-table .table-row-cell:selected {
+    -fx-background-color: #e3efeb;
+}
+
+.button-primary {
+    -fx-background-color: #177f72;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.button-accent {
+    -fx-background-color: #d97852;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.button-danger {
+    -fx-text-fill: #a43d35;
+}
+
+.button-primary,
+.button-accent,
+.button-danger,
+.button {
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-padding: 8px 12px;
+    -fx-cursor: hand;
+}
+
+.button-primary:hover {
+    -fx-background-color: #116b60;
+}
+
+.button-accent:hover {
+    -fx-background-color: #be6040;
+}
+
+.button:disabled {
+    -fx-opacity: 0.48;
+}
+
+.status-message {
+    -fx-text-fill: #607473;
+    -fx-font-size: 11px;
+}
+
+.form-label {
+    -fx-text-fill: #526866;
+}
+
+.text-field,
+.combo-box {
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-border-color: #cbd6d1;
+    -fx-background-color: #ffffff;
+}
+
+.landing-intro {
+    -fx-background-color: linear-gradient(to bottom, #6eacc9 0%, #c5e0e6 58%, #ecdfc5 100%);
+}
+
+.intro-brand {
+    -fx-text-fill: #153b48;
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+}
+
+.intro-subtitle {
+    -fx-text-fill: #315c68;
+    -fx-font-size: 17px;
+}
+
+.intro-airplane {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 56px;
+    -fx-effect: dropshadow(gaussian, rgba(21, 59, 72, 0.34), 12, 0.2, 0, 3);
+}
+
+.intro-cloud circle,
+.intro-cloud rectangle {
+    -fx-fill: rgba(255, 255, 255, 0.72);
+}
+
+.intro-runway {
+    -fx-fill: #536469;
+}
+
+.runway-marking {
+    -fx-text-fill: rgba(255, 255, 255, 0.66);
+    -fx-font-size: 18px;
+}
+
+.touchdown-glow {
+    -fx-fill: rgba(255, 225, 142, 0.84);
+    -fx-effect: dropshadow(gaussian, rgba(255, 209, 99, 0.75), 26, 0.55, 0, 0);
+}
+
+.landing-intro {
+    -fx-background-color: linear-gradient(to bottom, #6eacc9 0%, #c5e0e6 58%, #ecdfc5 100%);
+}
+
+.intro-brand {
+    -fx-text-fill: #153b48;
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+}
+
+.intro-subtitle {
+    -fx-text-fill: #315c68;
+    -fx-font-size: 17px;
+}
+
+.intro-airplane {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 56px;
+    -fx-effect: dropshadow(gaussian, rgba(21, 59, 72, 0.34), 12, 0.2, 0, 3);
+}
+
+.intro-cloud circle,
+.intro-cloud rectangle {
+    -fx-fill: rgba(255, 255, 255, 0.72);
+}
+
+.intro-runway {
+    -fx-fill: #536469;
+}
+
+.runway-marking {
+    -fx-text-fill: rgba(255, 255, 255, 0.66);
+    -fx-font-size: 18px;
+}
+
+.touchdown-glow {
+    -fx-fill: rgba(255, 225, 142, 0.84);
+    -fx-effect: dropshadow(gaussian, rgba(255, 209, 99, 0.75), 26, 0.55, 0, 0);
+}
